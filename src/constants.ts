@@ -1,6 +1,6 @@
 export const LERP_SPEED = 0.1; // the higher value - the faster player moves
 
-export const GAME_SIZE = 600;
+export const GAME_SIZE = 800;
 export const SPAWN_RADIUS = 70;
 
 export const FEAR_RADIUS = 150; // The distance at which ducks start to flee
