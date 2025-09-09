@@ -3,10 +3,19 @@ import Matter from 'matter-js';
 import { GAME_SIZE, LERP_SPEED } from '../constants';
 
 // GAME
-const SPAWN_RADIUS = 80; // Radius of the invisible spawn circle
+const SPAWN_RADIUS = 8; // Radius of the invisible spawn circle
+
 const FEAR_RADIUS = 250; // The distance at which ducks start to flee
-const MAX_FLEE_FORCE = 0.0003; // The maximum force applied to a duck
-const BOUNDS_FORCE = 0.003; // The force that pushes ducks back into the play area
+const FEAR_FORCE = 0.0003; // The maximum force applied to a duck
+
+const BOUNDS_FORCE = 0.001; // The force that pushes ducks back into the play area
+const BOUNDS_BUFFER = 15; // The buffer zone outside the play area where nothing happens
+
+const GROUPING_FORCE = 0.0000005; // The gentle force pulling ducks together
+
+const COMFORT_RADIUS = 20; // Ducks' personal space radius
+const COMFORT_FORCE = 0.00005; // Force to push ducks apart
+const SORTING_RADIUS = 40; // Radius to check for foreign ducks
 
 // PLAYER
 const STARTING_PLAYER_POSITION = { x: 295, y: 500 };
@@ -110,6 +119,9 @@ const Game = () => {
           restitution: 0.5, // Make them a bit bouncy
           friction: 0.1,
           frictionAir: FRICTION_AIR,
+          plugin: {
+            groupId: i,
+          },
         });
 
         ducks.push(duck);
@@ -151,8 +163,6 @@ const Game = () => {
     window.addEventListener('mousemove', handleMouseMove);
 
     // --- Main Game Loop ---
-    const BOUNDS_BUFFER = 10; // The buffer zone outside the play area where nothing happens
-
     const playArea = {
       min: { x: 0, y: 0 },
       max: { x: render.options.width!, y: render.options.height! },
@@ -169,6 +179,7 @@ const Game = () => {
       },
     };
 
+    //! Update
     Events.on(engine, 'beforeUpdate', () => {
       // 1. Move the player towards the mouse
       const currentPos = player.position;
@@ -176,8 +187,100 @@ const Game = () => {
       const newY = lerp(currentPos.y, mousePosition.y, LERP_SPEED);
       Body.setPosition(player, { x: newX, y: newY });
 
+      // 2. Apply push-back force between ducks to create personal space
+      for (let i = 0; i < ducks.length; i++) {
+        for (let j = i + 1; j < ducks.length; j++) {
+          const duckA = ducks[i];
+          const duckB = ducks[j];
+
+          const vectorBetween = Vector.sub(duckA.position, duckB.position);
+          const distance = Vector.magnitude(vectorBetween);
+
+          if (distance < COMFORT_RADIUS && distance > 0) {
+            const forceMagnitude = (COMFORT_RADIUS - distance) * COMFORT_FORCE;
+            const forceDirection = Vector.normalise(vectorBetween);
+            const force = Vector.mult(forceDirection, forceMagnitude);
+
+            // Apply opposite forces
+            Body.applyForce(duckA, duckA.position, force);
+            Body.applyForce(duckB, duckB.position, Vector.neg(force));
+          }
+        }
+      }
+
+      // 3. Calculate Grouping behavior
+      const totalCenterOfMass = ducks.reduce(
+        (acc, duck) => {
+          acc.x += duck.position.x;
+          acc.y += duck.position.y;
+          return acc;
+        },
+        { x: 0, y: 0 }
+      );
+      totalCenterOfMass.x /= ducks.length;
+      totalCenterOfMass.y /= ducks.length;
+
       ducks.forEach((duck) => {
+        // --- Sorting Logic ---
+        let foundSameGroupFriend = false;
+        let foundForeigner = false;
+        const groupId = duck.plugin.groupId;
+
+        for (const otherDuck of ducks) {
+          if (duck.id === otherDuck.id) continue;
+
+          const distance = Vector.magnitude(
+            Vector.sub(duck.position, otherDuck.position)
+          );
+
+          if (distance < SORTING_RADIUS) {
+            const otherGroupId = otherDuck.plugin.groupId;
+            if (groupId === otherGroupId) {
+              foundSameGroupFriend = true;
+            } else {
+              foundForeigner = true;
+              // A foreigner nearby is an instant fail for sorting status
+              break;
+            }
+          }
+        }
+
+        // A duck is sorted if it has a friend from the same group AND no foreigners nearby.
+        const isSorted = foundSameGroupFriend && !foundForeigner;
+
+        // Apply visual feedback
+        if (isSorted) {
+          duck.render.strokeStyle = '#ffffff';
+          duck.render.lineWidth = 2;
+        } else {
+          // Reset to default
+          duck.render.strokeStyle = duck.render.fillStyle;
+          duck.render.lineWidth = 0;
+        }
+        // --- End Sorting Logic ---
+
         const pos = duck.position;
+
+        // Apply Grouping Force
+        if (ducks.length > 1) {
+          const centerOfOthers = {
+            x:
+              (totalCenterOfMass.x * ducks.length - pos.x) / (ducks.length - 1),
+            y:
+              (totalCenterOfMass.y * ducks.length - pos.y) / (ducks.length - 1),
+          };
+          const vectorToCenter = Vector.sub(centerOfOthers, pos);
+          const distanceToCenter = Vector.magnitude(vectorToCenter);
+          const cohesionForceMagnitude = distanceToCenter * GROUPING_FORCE;
+          const cohesionForceDirection = Vector.normalise(vectorToCenter);
+          const cohesionForce = Vector.mult(
+            cohesionForceDirection,
+            cohesionForceMagnitude
+          );
+          Body.applyForce(duck, pos, cohesionForce);
+        }
+
+        // Apply Fear and Containment forces
         const isInsidePlayArea =
           pos.x >= playArea.min.x &&
           pos.x <= playArea.max.x &&
@@ -190,8 +293,7 @@ const Game = () => {
           const distance = Vector.magnitude(vectorToPlayer);
 
           if (distance < FEAR_RADIUS) {
-            const forceMagnitude =
-              MAX_FLEE_FORCE * (1 - distance / FEAR_RADIUS);
+            const forceMagnitude = FEAR_FORCE * (1 - distance / FEAR_RADIUS);
             const forceDirection = Vector.normalise(vectorToPlayer);
             const force = Vector.mult(forceDirection, forceMagnitude);
             Body.applyForce(duck, pos, force);
