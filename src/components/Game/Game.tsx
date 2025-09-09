@@ -11,7 +11,7 @@ const Game = () => {
   const [seed, setSeed] = useState(getInitialSeed);
   const [gameState, setGameState] = useState<GameState>(GameState.START);
   const [numGroups, setNumGroups] = useState(3);
-  const [ducksPerGroup, setDucksPerGroup] = useState(4);
+  const [ducksPerGroup, setDucksPerGroup] = useState(3);
   const [time, setTime] = useState(0);
   const [finalTime, setFinalTime] = useState(0);
   const sceneRef = useRef<HTMLDivElement>(null);
