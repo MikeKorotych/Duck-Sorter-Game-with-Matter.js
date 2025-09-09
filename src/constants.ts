@@ -44,3 +44,9 @@ export const BASE_COLORS = [
 
 export const GROUP_OPTIONS = [2, 3, 4];
 export const DUCKS_OPTIONS = [3, 4, 5];
+
+export enum GameState {
+  START = 'start',
+  PLAYING = 'playing',
+  WON = 'won',
+}

@@ -12,6 +12,10 @@ A simple and fun game where you herd and sort groups of ducks into their own lit
 
 ## How to Run
 
+Just open deployed project - https://duck-sorting-game.netlify.app/
+
+Or install it on your machine:
+
 1.  **Install Dependencies:**
     Open your terminal in the project root and run:
 

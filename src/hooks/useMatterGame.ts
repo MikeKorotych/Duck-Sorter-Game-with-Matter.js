@@ -1,3 +1,4 @@
+// Импортируем необходимые зависимости из React и Matter.js, а также константы и утилиты
 import React, { useEffect, useRef } from 'react';
 import Matter from 'matter-js';
 import {
@@ -12,6 +13,7 @@ import {
   FRICTION_AIR,
   GAME_SIZE,
   GROUPING_FORCE,
+  GameState,
   LERP_SPEED,
   SORTING_RADIUS,
   SPAWN_RADIUS,
@@ -21,26 +23,29 @@ import { seededRandom } from '../utils';
 
 interface UseMatterGameProps {
   sceneRef: React.RefObject<HTMLDivElement | null>;
-  seed: number;
-  gameState: string;
+  seed: number; // Зерно для генерации случайных чисел, чтобы обеспечить повторяемость
+  gameState: GameState;
   numGroups: number;
   ducksPerGroup: number;
   setTime: React.Dispatch<React.SetStateAction<number>>;
   setFinalTime: React.Dispatch<React.SetStateAction<number>>;
-  setGameState: React.Dispatch<React.SetStateAction<string>>;
-  startTimeRef: React.MutableRefObject<number>;
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>;
+  startTimeRef: React.RefObject<number>;
 }
 
+// Тип для определения игровой зоны
 type PlayArea = {
   min: { x: number; y: number };
   max: { x: number; y: number };
 };
 
+// Тип для определения внешних границ, за которые утки не должны выходить и будут отталкиваться
 type OuterBounds = {
   min: { x: number; y: number };
   max: { x: number; y: number };
 };
 
+// Основной хук, отвечающий за логику игры с использованием Matter.js
 export const useMatterGame = ({
   sceneRef,
   seed,
@@ -52,16 +57,18 @@ export const useMatterGame = ({
   setGameState,
   startTimeRef,
 }: UseMatterGameProps) => {
+  // Ссылки для хранения экземпляров движка Matter.js
   const engineRef = useRef<Matter.Engine | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
 
+  // Основной useEffect, который запускается при изменении зависимостей
   useEffect(() => {
-    if (!sceneRef?.current || gameState !== 'playing') {
-      // Cleanup Matter.js if it was running and game state changed away from playing
+    // Если сцена не готова или игра не в состоянии PLAYING, очищаем ресурсы Matter.js
+    if (!sceneRef?.current || gameState !== GameState.PLAYING) {
       if (engineRef.current) {
-        Matter.Runner.stop(runnerRef.current!); // Use ! for non-null assertion
-        Matter.Render.stop(renderRef.current!); // Use ! for non-null assertion
+        Matter.Runner.stop(runnerRef.current!);
+        Matter.Render.stop(renderRef.current!);
         Matter.Engine.clear(engineRef.current);
         if (renderRef.current!.canvas) renderRef.current!.canvas.remove();
         engineRef.current = null;
@@ -71,34 +78,33 @@ export const useMatterGame = ({
       return;
     }
 
-    const Engine = Matter.Engine,
-      Render = Matter.Render,
-      Runner = Matter.Runner,
-      Bodies = Matter.Bodies,
-      Body = Matter.Body,
-      Composite = Matter.Composite,
-      Events = Matter.Events,
-      Vector = Matter.Vector;
+    // Деструктуризация модулей Matter.js для удобства
+    const { Engine, Render, Runner, Bodies, Body, Composite, Events, Vector } =
+      Matter;
 
+    // Создание движка и мира
     const engine = Engine.create();
     const world = engine.world;
-    engine.gravity.y = 0;
+    engine.gravity.y = 0; // Отключаем гравитацию
 
+    // Создание рендера для отображения симуляции
     const render = Render.create({
       element: sceneRef.current,
       engine: engine,
       options: {
         width: GAME_SIZE,
         height: GAME_SIZE,
-        wireframes: false,
+        wireframes: false, // Отключаем каркасный режим для отображения сплошных цветов
         background: 'transparent',
       },
     });
 
+    // Сохраняем экземпляры в ссылки
     engineRef.current = engine;
     renderRef.current = render;
     runnerRef.current = Runner.create();
 
+    // Создание объекта игрока (курсора)
     const player = Bodies.circle(
       STARTING_PLAYER_POSITION.x,
       STARTING_PLAYER_POSITION.y,
@@ -106,17 +112,20 @@ export const useMatterGame = ({
       { isStatic: true, render: { fillStyle: '#ffffff' } }
     );
 
+    // Создание уток
     const ducks: Matter.Body[] = [];
     const centerX = render.options.width! / 2;
     const centerY = render.options.height! / 2;
     const availableColors = [...BASE_COLORS];
 
     for (let i = 0; i < numGroups; i++) {
+      // Выбираем случайный цвет для группы
       const colorIndex = Math.floor(
         seededRandom(seed + i) * availableColors.length
       );
       const color = availableColors.splice(colorIndex, 1)[0];
       for (let j = 0; j < ducksPerGroup; j++) {
+        // Генерируем случайные координаты для уток внутри радиуса спавна
         const angle = seededRandom(seed + i * 10 + j) * 2 * Math.PI;
         const radius =
           SPAWN_RADIUS * Math.sqrt(seededRandom(seed + i * 20 + j));
@@ -124,17 +133,19 @@ export const useMatterGame = ({
         const y = centerY + radius * Math.sin(angle);
         const duck = Bodies.circle(x, y, DUCK_SIZE, {
           render: { fillStyle: color },
-          restitution: 0.5,
-          friction: 0.1,
-          frictionAir: FRICTION_AIR,
-          plugin: { groupId: i },
+          restitution: 0.5, // Упругость
+          friction: 0.1, // Трение
+          frictionAir: FRICTION_AIR, // Сопротивление воздуха
+          plugin: { groupId: i }, // Присваиваем ID группы
         });
         ducks.push(duck);
       }
     }
 
+    // Добавляем все объекты (утки и игрок) в мир
     Composite.add(world, [...ducks, player]);
 
+    // Обработка движения мыши для обновления позиции игрока
     let mousePosition = STARTING_PLAYER_POSITION;
     const handleMouseMove = (event: MouseEvent) => {
       const bounds = render.canvas.getBoundingClientRect();
@@ -145,6 +156,7 @@ export const useMatterGame = ({
     };
     render.canvas.addEventListener('mousemove', handleMouseMove);
 
+    // Определение границ игровой зоны и внешних границ
     const playArea: PlayArea = {
       min: { x: 0, y: 0 },
       max: { x: render.options.width!, y: render.options.height! },
@@ -160,6 +172,7 @@ export const useMatterGame = ({
       },
     };
 
+    // Функция для плавного обновления позиции игрока (интерполяция)
     const updatePlayerPosition = (
       player: Matter.Body,
       mousePos: Matter.Vector,
@@ -171,7 +184,8 @@ export const useMatterGame = ({
       Body.setPosition(player, { x: newX, y: newY });
     };
 
-    const applyDuckRepulsion = (
+    // Применяет силу отталкивания между утками, чтобы они не слипались
+    const applyDuckComfortZone = (
       ducks: Matter.Body[],
       comfortRadius: number,
       comfortForce: number
@@ -195,7 +209,8 @@ export const useMatterGame = ({
       }
     };
 
-    const calculateAndApplyCohesion = (
+    // Рассчитывает и применяет силу сплоченности, чтобы утки одной группы держались вместе
+    const calculateAndApplyGrouping = (
       ducks: Matter.Body[],
       groupingForce: number
     ) => {
@@ -227,6 +242,7 @@ export const useMatterGame = ({
       });
     };
 
+    // Обновляет визуальный статус утки (обводка), если она отсортирована
     const updateDuckVisualStatus = (
       duck: Matter.Body,
       allDucks: Matter.Body[],
@@ -252,10 +268,13 @@ export const useMatterGame = ({
         }
       }
       const isIndividuallySorted = foundSameGroupFriend && !foundForeigner;
-      duck.render.strokeStyle = isIndividuallySorted ? '#ffffff' : (duck.render.fillStyle as string);
+      duck.render.strokeStyle = isIndividuallySorted
+        ? '#ffffff'
+        : (duck.render.fillStyle as string);
       duck.render.lineWidth = isIndividuallySorted ? 2 : 0;
     };
 
+    // Проверяет, отсортированы ли все группы уток
     const checkGroupSortingStatus = (
       allDucks: Matter.Body[],
       numGroups: number,
@@ -264,8 +283,11 @@ export const useMatterGame = ({
       if (allDucks.length === 0) {
         return false;
       }
-      const groupDucks: Matter.Body[][] = Array.from({ length: numGroups }, () => []);
-      allDucks.forEach(duck => {
+      const groupDucks: Matter.Body[][] = Array.from(
+        { length: numGroups },
+        () => []
+      );
+      allDucks.forEach((duck) => {
         if (duck.plugin.groupId !== undefined) {
           groupDucks[duck.plugin.groupId].push(duck);
         }
@@ -280,11 +302,13 @@ export const useMatterGame = ({
           continue;
         }
 
-        // 1. Check for foreigners
+        // 1. Проверка на наличие "чужих" уток поблизости
         for (const duck of currentGroup) {
           for (const otherDuck of allDucks) {
             if (duck.plugin.groupId !== otherDuck.plugin.groupId) {
-              const distance = Vector.magnitude(Vector.sub(duck.position, otherDuck.position));
+              const distance = Vector.magnitude(
+                Vector.sub(duck.position, otherDuck.position)
+              );
               if (distance < sortingRadius) {
                 sortedGroups[i] = false;
                 break;
@@ -295,7 +319,7 @@ export const useMatterGame = ({
         }
         if (!sortedGroups[i]) continue;
 
-        // 2. Check for intra-group cohesion using BFS for connectivity
+        // 2. Проверка на связность группы (все утки должны быть рядом друг с другом)
         const visited = new Set<number>();
         const queue: Matter.Body[] = [];
         if (currentGroup.length > 0) {
@@ -305,10 +329,12 @@ export const useMatterGame = ({
 
         let head = 0;
         while (head < queue.length) {
-          const duck = queue[head++]; // More performant than .shift()
+          const duck = queue[head++];
           for (const otherDuck of currentGroup) {
             if (!visited.has(otherDuck.id)) {
-              const distance = Vector.magnitude(Vector.sub(duck.position, otherDuck.position));
+              const distance = Vector.magnitude(
+                Vector.sub(duck.position, otherDuck.position)
+              );
               if (distance < sortingRadius) {
                 visited.add(otherDuck.id);
                 queue.push(otherDuck);
@@ -321,9 +347,11 @@ export const useMatterGame = ({
           sortedGroups[i] = false;
         }
       }
-      return sortedGroups.every(isSorted => isSorted);
+      // Возвращает true, если все группы отсортированы
+      return sortedGroups.every((isSorted) => isSorted);
     };
 
+    // Применяет силы страха (от игрока) и удержания в границах
     const applyFearAndContainmentForces = (
       duck: Matter.Body,
       player: Matter.Body,
@@ -335,7 +363,7 @@ export const useMatterGame = ({
     ) => {
       const pos = duck.position;
 
-      // Fear logic: Apply if duck is within fearRadius of player, regardless of playArea
+      // Логика страха: утки отталкиваются от курсора игрока
       const vectorToPlayer = Vector.sub(pos, player.position);
       if (Vector.magnitude(vectorToPlayer) < fearRadius) {
         const forceMagnitude =
@@ -347,7 +375,7 @@ export const useMatterGame = ({
         Body.applyForce(duck, pos, force);
       }
 
-      // Containment logic: Apply if duck is outside playArea (even within the buffer)
+      // Логика удержания: утки отталкиваются от границ игровой зоны
       const isInsidePlayArea =
         pos.x >= playArea.min.x &&
         pos.x <= playArea.max.x &&
@@ -369,12 +397,14 @@ export const useMatterGame = ({
       }
     };
 
+    // Основной игровой цикл, который выполняется перед каждым обновлением кадра
     Events.on(engine, 'beforeUpdate', () => {
       setTime((Date.now() - startTimeRef.current) / 1000);
 
+      // Обновляем позицию игрока и применяем все силы к уткам
       updatePlayerPosition(player, mousePosition, LERP_SPEED);
-      applyDuckRepulsion(ducks, COMFORT_RADIUS, COMFORT_FORCE);
-      calculateAndApplyCohesion(ducks, GROUPING_FORCE);
+      applyDuckComfortZone(ducks, COMFORT_RADIUS, COMFORT_FORCE);
+      calculateAndApplyGrouping(ducks, GROUPING_FORCE);
 
       ducks.forEach((duck) => {
         applyFearAndContainmentForces(
@@ -389,22 +419,29 @@ export const useMatterGame = ({
         updateDuckVisualStatus(duck, ducks, SORTING_RADIUS);
       });
 
-      const allGroupsSorted = checkGroupSortingStatus(ducks, numGroups, SORTING_RADIUS);
+      // Проверяем, выиграл ли игрок
+      const allGroupsSorted = checkGroupSortingStatus(
+        ducks,
+        numGroups,
+        SORTING_RADIUS
+      );
 
       if (allGroupsSorted) {
         setFinalTime((Date.now() - startTimeRef.current) / 1000);
-        setGameState('won');
+        setGameState(GameState.WON);
       }
     });
 
+    // Запускаем движок
     Runner.run(runnerRef.current!, engine);
     Render.run(render);
 
+    // Все чистим при размонтировании
     return () => {
       render.canvas.removeEventListener('mousemove', handleMouseMove);
       if (engineRef.current) {
-        Matter.Runner.stop(runnerRef.current!); // Use ! for non-null assertion
-        Render.stop(renderRef.current!); // Use ! for non-null assertion
+        Matter.Runner.stop(runnerRef.current!);
+        Render.stop(renderRef.current!);
         Engine.clear(engineRef.current);
         if (renderRef.current!.canvas) renderRef.current!.canvas.remove();
         engineRef.current = null;
@@ -413,6 +450,7 @@ export const useMatterGame = ({
       }
     };
   }, [
+    // Зависимости
     seed,
     gameState,
     numGroups,
