@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { GAME_SIZE } from '../constants';
+import { GAME_SIZE } from '../../constants';
 import './Game.css';
-import { getInitialSeed } from '../utils';
-import StartScreen from './StartScreen';
-import VictoryScreen from './VictoryScreen';
-import { useMatterGame } from '../hooks/useMatterGame';
+import { getInitialSeed } from '../../utils';
+import StartScreen from '../StartScreen/StartScreen';
+import VictoryScreen from '../VictoryScreen/VictoryScreen';
+import { useMatterGame } from '../../hooks/useMatterGame';
 
 // --- COMPONENT ---
 const Game = () => {
