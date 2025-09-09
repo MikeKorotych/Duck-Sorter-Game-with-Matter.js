@@ -3,8 +3,8 @@ export const LERP_SPEED = 0.1; // the higher value - the faster player moves
 export const GAME_SIZE = 600;
 export const SPAWN_RADIUS = 70;
 
-export const FEAR_RADIUS = 200; // The distance at which ducks start to flee
-export const FEAR_FORCE = 0.0004; // The maximum force applied to a duck
+export const FEAR_RADIUS = 150; // The distance at which ducks start to flee
+export const FEAR_FORCE = 0.0003; // The maximum force applied to a duck
 
 export const BOUNDS_FORCE = 0.008; // The force that pushes ducks back into the play area
 export const BOUNDS_BUFFER = 20; // The buffer zone outside the play area where nothing happens
