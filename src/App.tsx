@@ -1,4 +1,4 @@
-import './App.css';
+
 import Game from './components/Game/Game';
 import { GAME_SIZE } from './constants';
 

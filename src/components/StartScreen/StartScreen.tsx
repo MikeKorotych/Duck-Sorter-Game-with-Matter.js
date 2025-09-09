@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { getDailySeed, generateRandomSeed } from '../../utils';
 import { GAME_SIZE, GROUP_OPTIONS, DUCKS_OPTIONS } from '../../constants';
 import './StartScreen.css';
+import '../common.css';
 
 interface StartScreenProps {
   onStartGame: (seed: number, numGroups: number, ducksPerGroup: number) => void;

@@ -1,0 +1,64 @@
+/* Shared styles for StartScreen and VictoryScreen */
+.control-group {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.anim-delay-1,
+.anim-delay-2,
+.anim-delay-3 {
+  opacity: 0;
+  animation-name: slideUpFadeIn;
+  animation-duration: 0.5s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.anim-delay-1 {
+  animation-delay: 0.3s;
+}
+
+.anim-delay-2 {
+  animation-delay: 0.5s;
+}
+
+.anim-delay-3 {
+  animation-delay: 0.8s;
+}
+
+.control-group-label {
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.start-button {
+  background: #fff;
+  color: #242424;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.start-button:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+.start-button:disabled {
+  transform: scale(1.05);
+}
+
+.start-button:disabled {
+  transform: scale(1.05);
+  background:  #98c070ff;
+  outline: 1px solid #fff;
+}

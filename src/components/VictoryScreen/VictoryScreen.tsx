@@ -6,6 +6,7 @@ import {
 } from '../../constants';
 import { getDailySeed, generateRandomSeed } from '../../utils';
 import './VictoryScreen.css';
+import '../common.css';
 
 interface VictoryScreenProps {
   finalTime: number;
