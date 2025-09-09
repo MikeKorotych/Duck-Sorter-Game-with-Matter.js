@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import ReactConfetti from 'react-confetti';
-import {
-  GROUP_OPTIONS,
-  DUCKS_OPTIONS,
-} from '../../constants';
-import { getDailySeed, generateRandomSeed } from '../../utils';
+import GameSettings from '../GameSettings/GameSettings';
+import StartControls from '../StartControls/StartControls';
 import './VictoryScreen.css';
 import '../common.css';
 
 interface VictoryScreenProps {
   finalTime: number;
   seed: number;
-  onRestartGame: (seed: number, numGroups: number, ducksPerGroup: number) => void;
+  onRestartGame: (
+    seed: number,
+    numGroups: number,
+    ducksPerGroup: number
+  ) => void;
   currentNumGroups: number;
   currentDucksPerGroup: number;
 }
@@ -26,9 +27,8 @@ const VictoryScreen: React.FC<VictoryScreenProps> = ({
   const [numGroups, setNumGroups] = useState(currentNumGroups);
   const [ducksPerGroup, setDucksPerGroup] = useState(currentDucksPerGroup);
 
-  const handleStart = (seed?: number) => {
-    const finalSeed = seed ?? generateRandomSeed();
-    onRestartGame(finalSeed, numGroups, ducksPerGroup);
+  const handleRestart = (seed: number) => {
+    onRestartGame(seed, numGroups, ducksPerGroup);
   };
 
   return (
@@ -46,52 +46,14 @@ const VictoryScreen: React.FC<VictoryScreenProps> = ({
       </div>
       <div className="victory-text">on seed: {seed}</div>
 
-      {/* New Controls */}
-      <div className="control-group anim-delay-1">
-        <div className="control-group-label">Number of Groups: {numGroups}</div>
-        <div className="button-group">
-          {GROUP_OPTIONS.map((count) => (
-            <button
-              key={count}
-              className="start-button"
-              onClick={() => setNumGroups(count)}
-              disabled={numGroups === count}
-            >
-              {count}
-            </button>
-          ))}
-        </div>
-      </div>
+      <GameSettings
+        numGroups={numGroups}
+        setNumGroups={setNumGroups}
+        ducksPerGroup={ducksPerGroup}
+        setDucksPerGroup={setDucksPerGroup}
+      />
 
-      <div className="control-group anim-delay-2">
-        <div className="control-group-label">
-          Ducks per Group: {ducksPerGroup}
-        </div>
-        <div className="button-group">
-          {DUCKS_OPTIONS.map((count) => (
-            <button
-              key={count}
-              className="start-button"
-              onClick={() => setDucksPerGroup(count)}
-              disabled={ducksPerGroup === count}
-            >
-              {count}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="button-group anim-delay-3">
-        <button
-          className="start-button"
-          onClick={() => handleStart(getDailySeed())}
-        >
-          Daily Seed
-        </button>
-        <button className="start-button" onClick={() => handleStart()}>
-          Random Seed
-        </button>
-      </div>
+      <StartControls onStart={handleRestart} />
     </div>
   );
 };
