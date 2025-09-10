@@ -1,6 +1,6 @@
 # Duck Sorter
 
-A simple and fun game where you herd and sort groups of ducks into their own little clusters. Built with React, TypeScript, and the Matter.js physics engine.
+A simple and fun game where you sort ducks into their own little clusters. Built with React, TypeScript, and the Matter.js physics engine.
 
 ## Features
 
