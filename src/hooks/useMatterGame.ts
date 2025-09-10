@@ -131,13 +131,29 @@ export const useMatterGame = ({
           SPAWN_RADIUS * Math.sqrt(seededRandom(seed + i * 20 + j));
         const x = centerX + radius * Math.cos(angle);
         const y = centerY + radius * Math.sin(angle);
-        const duck = Bodies.circle(x, y, DUCK_SIZE, {
+
+        // Создаем основное тело утки
+        const duckBody = Bodies.circle(x, y, DUCK_SIZE, {
           render: { fillStyle: color },
+        });
+
+        // Создаем круг-индикатор
+        const indicatorCircle = Bodies.circle(x, y, 3, {
+          isSensor: true, // Делаем его сенсором, чтобы он не участвовал в столкновениях
+          render: { fillStyle: 'transparent' }, // Изначально прозрачный
+        });
+
+        // Создаем составное тело, объединяя утку и индикатор
+        const duck = Body.create({
+          parts: [duckBody, indicatorCircle],
           restitution: 0.5, // Упругость
           friction: 0.1, // Трение
           frictionAir: FRICTION_AIR, // Сопротивление воздуха
-          plugin: { groupId: i }, // Присваиваем ID группы
+          plugin: {
+            groupId: i, // Присваиваем ID группы
+          },
         });
+
         ducks.push(duck);
       }
     }
@@ -268,10 +284,15 @@ export const useMatterGame = ({
         }
       }
       const isIndividuallySorted = foundSameGroupFriend && !foundForeigner;
-      duck.render.strokeStyle = isIndividuallySorted
-        ? '#ffffff'
-        : (duck.render.fillStyle as string);
-      duck.render.lineWidth = isIndividuallySorted ? 2 : 0;
+
+      // Обновляем цвет индикатора в зависимости от статуса сортировки
+      // Индикатор - это третья часть составного тела (0: родитель, 1: тело, 2: индикатор)
+      if (duck.parts.length > 2) {
+        const indicator = duck.parts[2];
+        indicator.render.fillStyle = isIndividuallySorted
+          ? '#ffffff'
+          : 'transparent';
+      }
     };
 
     // Проверяет, отсортированы ли все группы уток

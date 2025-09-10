@@ -24,22 +24,21 @@ export const FRICTION_AIR = 0.1;
 
 export const STARTING_PLAYER_POSITION = { x: 295, y: 500 };
 export const BASE_COLORS = [
-  '#ddcf99',
-  '#cca87b',
-  '#b97a60',
-  '#9c524e',
-  '#774251',
-  '#4b3d44',
-  '#4e5463',
-  '#5b7d73',
-  '#8e9f7d',
-  '#645355',
-  '#8c7c79',
-  '#a99c8d',
-  '#7d7b62',
-  '#aaa25d',
-  '#846d59',
-  '#a88a5e',
+  '#1a1c2c',
+  '#5d275d',
+  '#b13e53',
+  '#ef7d57',
+  '#ffcd75',
+  '#a7f070',
+  '#38b764',
+  '#257179',
+  '#29366f',
+  '#3b5dc9',
+  '#41a6f6',
+  '#73eff7',
+  '#94b0c2',
+  '#566c86',
+  '#333c57',
 ];
 
 export const GROUP_OPTIONS = [2, 3, 4];
