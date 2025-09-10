@@ -4,12 +4,12 @@ export const GAME_SIZE = 800;
 export const SPAWN_RADIUS = 70;
 
 export const FEAR_RADIUS = 150; // The distance at which ducks start to flee
-export const FEAR_FORCE = 0.0003; // The maximum force applied to a duck
+export const FEAR_FORCE = 0.00035; // The maximum force applied to a duck
 
 export const BOUNDS_FORCE = 0.008; // The force that pushes ducks back into the play area
 export const BOUNDS_BUFFER = 20; // The buffer zone outside the play area where nothing happens
 
-export const GROUPING_FORCE = 0.0000003; // The gentle force pulling ducks together
+export const GROUPING_FORCE = 0.0000002; // The gentle force pulling ducks together
 
 export const COMFORT_RADIUS = 20; // Ducks' personal space radius
 export const COMFORT_FORCE = 0.00005; // Force to push ducks apart
@@ -42,7 +42,7 @@ export const BASE_COLORS = [
 ];
 
 export const GROUP_OPTIONS = [2, 3, 4];
-export const DUCKS_OPTIONS = [3, 4, 5];
+export const DUCKS_OPTIONS = [2, 3, 4];
 
 // @ts-ignore
 export enum GameState {
